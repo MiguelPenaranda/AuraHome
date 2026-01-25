@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Optional: ensure background applies to full page */
+html, body, #root {
+  height: 100%;
+}
