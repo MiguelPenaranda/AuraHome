@@ -31,10 +31,21 @@ const defaultCategories = [
   { id: "bebidas", label: "Bebidas" },
 ];
 
+import { useSupabaseTable } from "../lib/hooks/useSupabaseTable";
+
 export const AddItemForm: React.FC<AddItemFormProps> = ({
   categories = defaultCategories,
   onSubmit,
 }) => {
+  // Cargar categorías desde Supabase
+  const { data: categoriesData, loading, error } = useSupabaseTable<any>("Categories");
+  const categoriesList: { id: string; label: string }[] = useMemo(() => {
+    if (!categoriesData || categoriesData.length === 0) return categories;
+    return categoriesData.map((row: any) => ({
+      id: String(row.id ?? row.key ?? row.slug ?? Math.random()),
+      label: String(row.name ?? row.label ?? row.title ?? row.id ?? "Sin nombre"),
+    }));
+  }, [categoriesData, categories]);
   const categoryIcons: Record<string, React.FC<SvgProps>> = useMemo(
     () => ({
       vegetales: VegetalesIcon,
@@ -49,7 +60,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
 
   const [values, setValues] = useState<AddItemFormValues>({
     name: "",
-    category: categories[0]?.id ?? "",
+    category: categoriesList[0]?.id ?? "",
     brand: "",
     quantity: 1,
   });
@@ -99,7 +110,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
                   onChange={handleChange}
                   className="rounded-xl border border-transparent bg-white px-3 py-2 text-sm font-medium text-slate-800 shadow-inner focus:outline-none focus:ring-2 focus:ring-[#2c6ef2]"
                 >
-                  {categories.map((c) => (
+                  {categoriesList.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.label}
                     </option>

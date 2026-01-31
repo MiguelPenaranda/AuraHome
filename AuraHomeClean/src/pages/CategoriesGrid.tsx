@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Apple,
   Carrot,
@@ -37,9 +37,49 @@ const Card: React.FC<{
   </button>
 );
 
+import { useSupabaseTable } from "../lib/hooks/useSupabaseTable";
+
 export const CategoriesGrid: React.FC<CategoriesGridProps> = ({ onSelect }) => {
+  // Cargar categorías desde Supabase (tabla: Categories)
+  const { data: categories, loading, error } = useSupabaseTable<any>("Categories");
+  const categoriesList = useMemo(() => {
+    return (categories ?? []).map((row: any) => ({
+      id: String(row.id ?? row.key ?? row.slug ?? Math.random()),
+      label: String(row.name ?? row.label ?? row.title ?? row.id ?? "Sin nombre"),
+    }));
+  }, [categories]);
+
   return (
     <div className="space-y-4">
+      {/* Lista dinámica desde Supabase */}
+      <div className="rounded-3xl bg-white px-6 py-5 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">Categorías (Supabase)</h2>
+            {loading && <p className="text-sm text-slate-600">Cargando…</p>}
+            {error && <p className="text-sm text-red-600">Error: {error}</p>}
+          </div>
+        </div>
+        {categoriesList.length > 0 ? (
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            {categoriesList.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => onSelect?.(c.id)}
+                className="relative rounded-3xl shadow-sm bg-[#F5F7F9] h-24"
+              >
+                <div className="flex h-full w-full items-center justify-center">
+                  <span className="text-slate-900 font-medium">{c.label}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-slate-600 mt-2">No hay categorías aún.</p>
+        )}
+      </div>
+
       {/* Banner Superior */}
       <div className="rounded-3xl bg-[#E8F5E9] px-6 py-5 shadow-sm">
         <div className="flex items-center justify-between">

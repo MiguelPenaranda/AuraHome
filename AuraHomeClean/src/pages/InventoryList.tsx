@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Apple, Leaf, Minus, Plus } from "lucide-react";
+import { useSupabaseTable } from "../lib/hooks/useSupabaseTable";
 
 export type InventoryItem = {
   id: string;
@@ -19,7 +20,26 @@ const defaultItems: InventoryItem[] = [
 ];
 
 export const InventoryList: React.FC<InventoryListProps> = ({ items = defaultItems, onChange }) => {
-  const [data, setData] = useState<InventoryItem[]>(items);
+  // Cargar productos desde Supabase (tabla: products)
+  const { data: products, loading, error } = useSupabaseTable<any>("products");
+
+  // Mapear filas crudas a la estructura del componente
+  const supabaseItems: InventoryItem[] = useMemo(() => {
+    if (!products || products.length === 0) return items;
+    return products.map((row: any) => ({
+      id: String(row.id ?? row.slug ?? row.name ?? Math.random()),
+      name: String(row.name ?? row.title ?? row.label ?? row.id ?? "Sin nombre"),
+      quantity: Number(row.quantity ?? row.qty ?? 0),
+      icon: <Apple className="h-6 w-6" />,
+    }));
+  }, [products, items]);
+
+  const [data, setData] = useState<InventoryItem[]>(supabaseItems);
+
+  // Sincronizar cuando llegue data de Supabase
+  React.useEffect(() => {
+    setData(supabaseItems);
+  }, [supabaseItems]);
 
   const updateQty = (id: string, delta: number) => {
     setData((prev) => {
@@ -34,6 +54,8 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items = defaultIte
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Inventario</h2>
+      {loading && <div className="text-sm text-slate-600">Cargando productos desde Supabase…</div>}
+      {error && <div className="text-sm text-red-600">Error: {error}</div>}
       <div className="space-y-3">
         {data.map((it) => (
           <div
